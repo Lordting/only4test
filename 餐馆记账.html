@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>餐厅消费记录 / Restaurant-Ausgaben</title>
+<style>
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  padding: 24px;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Microsoft YaHei",
+    "Noto Sans CJK SC",
+    Arial,
+    sans-serif;
+  background: #f5f7fb;
+  color: #1f2937;
+}
+.container {
+  max-width: 850px;
+  margin: 0 auto;
+}
+.card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow:
+    0 8px 30px rgba(0,0,0,.08);
+}
+h1 {
+  margin: 0 0 20px;
+  font-size: 28px;
+}
+.info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+label {
+  display: block;
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 16px;
+  outline: none;
+}
+input:focus {
+  border-color: #6366f1;
+  box-shadow:
+    0 0 0 3px rgba(99,102,241,.12);
+}
+.form {
+  display: grid;
+  grid-template-columns: 1fr 150px auto;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.add {
+  background: #4f46e5;
+  color: #fff;
+}
+.add:hover {
+  background: #4338ca;
+}
+.danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.clear {
+  background: #eef2ff;
+  color: #4338ca;
+}
+.pdf {
+  background: #111827;
+  color: #fff;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th,
+td {
+  padding: 13px 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+th {
+  color: #6b7280;
+  font-size: 14px;
+  text-align: left;
+}
+td.price {
+  text-align: right;
+  white-space: nowrap;
+}
+td.action {
+  width: 110px;
+  text-align: right;
+}
+.empty {
+  text-align: center;
+  color: #9ca3af;
+  padding: 30px 0;
+}
+/* 商品总价 */
+.total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 22px;
+  padding: 18px;
+  border-radius: 14px;
+  background: #f3f4f6;
+}
+.total strong {
+  font-size: 30px;
+}
+/* 当天营业额区域 */
+.sales {
+  margin-top: 24px;
+  padding: 20px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+.sales h2 {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+.sales-grid {
+  display: grid;
+  grid-template-columns:
+    1fr 1fr;
+  gap: 14px;
+}
+.sales-total {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px;
+  border-radius: 12px;
+  background: #111827;
+  color: white;
+}
+.sales-total strong {
+  font-size: 28px;
+}
+.bottom {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+.hint {
+  color: #6b7280;
+  font-size: 13px;
+  margin-top: 12px;
+}
+@media(max-width:620px) {
+  body {
+    padding: 12px;
+  }
+  .card {
+    padding: 18px;
+  }
+  .info {
+    grid-template-columns: 1fr;
+  }
+  .form {
+    grid-template-columns:
+      1fr 110px;
+  }
+  .form .add {
+    grid-column: 1 / -1;
+  }
+  .sales-grid {
+    grid-template-columns: 1fr;
+  }
+  .bottom {
+    flex-wrap: wrap;
+  }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="card">
+<h1>
+🍽️ 餐厅消费记录 / Restaurant-Ausgaben
+</h1>
+<!-- ==========================
+     餐厅信息
+========================== -->
+<div class="info">
+  <div>
+    <label for="restaurant">
+      餐厅名称 / Restaurantname
+    </label>
+    <input
+      id="restaurant"
+      type="text"
+      placeholder="请输入餐厅名称 / Restaurantname eingeben"
+    >
+  </div>
+  <div>
+    <label for="date">
+      日期 / Datum
+    </label>
+    <input
+      id="date"
+      type="date"
+    >
+  </div>
+</div>
+<!-- ==========================
+     添加商品
+========================== -->
+<div class="form">
+  <input
+    id="name"
+    type="text"
+    placeholder="商品名称，例如：牛排 / Artikelname, z. B. Steak"
+    autocomplete="off"
+  >
+  <input
+    id="price"
+    type="text"
+    inputmode="decimal"
+    placeholder="价格，例如：12,50 / Preis"
+    autocomplete="off"
+  >
+  <button
+    class="add"
+    onclick="addItem()"
+  >
+    添加商品 / Artikel hinzufügen
+  </button>
+</div>
+<!-- ==========================
+     商品列表
+========================== -->
+<table>
+<thead>
+<tr>
+<th>
+商品名称 / Artikelname
+</th>
+<th style="text-align:right;">
+价格 / Preis
+</th>
+<th></th>
+</tr>
+</thead>
+<tbody id="items"></tbody>
+</table>
+<div
+  id="empty"
+  class="empty"
+>
+  还没有添加商品 / Noch keine Artikel hinzugefügt
+</div>
+<!-- ==========================
+     商品总价
+========================== -->
+<div class="total">
+  <span>
+    商品总价 / Artikelsumme
+  </span>
+  <strong id="total">
+    €0,00
+  </strong>
+</div>
+<!-- ==========================
+     当天营业额
+========================== -->
+<div class="sales">
+  <h2>
+    📊 当天营业额 / Tagesumsatz
+  </h2>
+  <div class="sales-grid">
+    <!-- 刷卡收入 -->
+    <div>
+      <label for="cardSales">
+        刷卡收入 / Kartenzahlungen
+      </label>
+      <input
+        id="cardSales"
+        type="text"
+        inputmode="decimal"
+        placeholder="例如：850,50"
+      >
+    </div>
+    <!-- 现金收入 -->
+    <div>
+      <label for="cashSales">
+        现金收入 / Barzahlungen
+      </label>
+      <input
+        id="cashSales"
+        type="text"
+        inputmode="decimal"
+        placeholder="例如：420,00"
+      >
+    </div>
+  </div>
+  <!-- 营业额自动计算 -->
+  <div class="sales-total">
+    <span>
+      当天营业额 / Tagesumsatz
+    </span>
+    <strong id="salesTotal">
+      €0,00
+    </strong>
+  </div>
+</div>
+<!-- ==========================
+     操作按钮
+========================== -->
+<div class="bottom">
+  <button
+    class="clear"
+    onclick="clearAll()"
+  >
+    清空商品 / Alle Artikel löschen
+  </button>
+  <button
+    class="pdf"
+    onclick="generatePDF()"
+  >
+    生成 A4 PDF / A4-PDF erstellen
+  </button>
+</div>
+<div class="hint">
+  提示：当天营业额 = 刷卡收入 + 现金收入。
+  /
+  Hinweis: Tagesumsatz = Kartenzahlungen + Barzahlungen.
+</div>
+</div>
+</div>
+<script>
+/* ================================
+   商品数据
+================================ */
+const items = [];
+/* ================================
+   默认日期
+================================ */
+const dateInput =
+  document.getElementById("date");
+dateInput.value =
+  new Date().toISOString().slice(0, 10);
+/* ================================
+   德国日期格式
+================================ */
+function formatDateGerman(dateString) {
+  if (!dateString) {
+    return "Nicht angegeben";
+  }
+  const parts =
+    dateString.split("-");
+  if (parts.length !== 3) {
+    return dateString;
+  }
+  return `${parts[2]}.${parts[1]}.${parts[0]}`;
+}
+/* ================================
+   德国金额格式
+   1234.5
+   ↓
+   1.234,50 €
+================================ */
+function formatPrice(value) {
+  return value
+    .toLocaleString(
+      "de-DE",
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }
+    ) + " €";
+}
+/* ================================
+   解析德国金额
+   12
+   12,5
+   12,50
+   1.234,56
+================================ */
+function parseGermanPrice(value) {
+  value = value.trim();
+  if (!value) {
+    return 0;
+  }
+  /*
+    如果包含逗号：
+    1.234,56
+    ↓
+    1234.56
+  */
+  if (value.includes(",")) {
+    value =
+      value.replace(/\./g, "");
+    value =
+      value.replace(",", ".");
+  }
+  return Number(value);
+}
+/* ================================
+   HTML 安全处理
+================================ */
+function escapeHtml(s) {
+  return s.replace(
+    /[&<>"']/g,
+    m => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[m])
+  );
+}
+/* ================================
+   计算当天营业额
+================================ */
+function calculateSales() {
+  const card =
+    parseGermanPrice(
+      document.getElementById("cardSales").value
+    );
+  const cash =
+    parseGermanPrice(
+      document.getElementById("cashSales").value
+    );
+  const total =
+    card + cash;
+  document.getElementById(
+    "salesTotal"
+  ).textContent =
+    formatPrice(total);
+  return {
+    card,
+    cash,
+    total
+  };
+}
+/* ================================
+   页面渲染
+================================ */
+function render() {
+  const tbody =
+    document.getElementById("items");
+  const empty =
+    document.getElementById("empty");
+  tbody.innerHTML = "";
+  items.forEach((item, i) => {
+    const tr =
+      document.createElement("tr");
+    /* 商品名称 */
+    const n =
+      document.createElement("td");
+    n.textContent =
+      item.name;
+    /* 商品价格 */
+    const p =
+      document.createElement("td");
+    p.className =
+      "price";
+    p.textContent =
+      formatPrice(item.price);
+    /* 删除按钮 */
+    const a =
+      document.createElement("td");
+    a.className =
+      "action";
+    const b =
+      document.createElement("button");
+    b.className =
+      "danger";
+    b.textContent =
+      "删除 / Löschen";
+    b.onclick = () => {
+      items.splice(i, 1);
+      render();
+    };
+    a.appendChild(b);
+    tr.append(
+      n,
+      p,
+      a
+    );
+    tbody.appendChild(tr);
+  });
+  empty.style.display =
+    items.length
+      ? "none"
+      : "block";
+  /* 商品总价 */
+  const total =
+    items.reduce(
+      (sum, item) =>
+        sum + item.price,
+      0
+    );
+  document.getElementById(
+    "total"
+  ).textContent =
+    formatPrice(total);
+  /* 同时更新营业额 */
+  calculateSales();
+}
+/* ================================
+   添加商品
+================================ */
+function addItem() {
+  const n =
+    document.getElementById("name");
+  const p =
+    document.getElementById("price");
+  const name =
+    n.value.trim();
+  const price =
+    parseGermanPrice(p.value);
+  if (!name) {
+    alert(
+      "请输入商品名称。\n" +
+      "Bitte geben Sie einen Artikelnamen ein."
+    );
+    n.focus();
+    return;
+  }
+  if (
+    !Number.isFinite(price) ||
+    price < 0
+  ) {
+    alert(
+      "请输入有效的价格，例如：12,50。\n" +
+      "Bitte geben Sie einen gültigen Preis ein, z. B. 12,50."
+    );
+    p.focus();
+    return;
+  }
+  items.push({
+    name: name,
+    price: price
+  });
+  n.value = "";
+  p.value = "";
+  n.focus();
+  render();
+}
+/* ================================
+   清空商品
+================================ */
+function clearAll() {
+  if (
+    items.length &&
+    !confirm(
+      "确定要清空所有商品吗？\n" +
+      "Möchten Sie wirklich alle Artikel löschen?"
+    )
+  ) {
+    return;
+  }
+  items.length = 0;
+  render();
+}
+/* ================================
+   PDF
+================================ */
+function generatePDF() {
+  const restaurant =
+    document
+      .getElementById("restaurant")
+      .value
+      .trim()
+      ||
+      "未填写 / Nicht angegeben";
+  const date =
+    document
+      .getElementById("date")
+      .value;
+  const germanDate =
+    formatDateGerman(date);
+  /* 商品总价 */
+  const itemTotal =
+    items.reduce(
+      (sum, item) =>
+        sum + item.price,
+      0
+    );
+  /* 营业额 */
+  const sales =
+    calculateSales();
+  /* 打开窗口 */
+  const win =
+    window.open(
+      "",
+      "_blank"
+    );
+  if (!win) {
+    alert(
+      "浏览器阻止了新窗口，请允许弹出窗口后重试。\n" +
+      "Der Browser hat das neue Fenster blockiert. " +
+      "Bitte erlauben Sie Pop-ups und versuchen Sie es erneut."
+    );
+    return;
+  }
+  /* 商品列表 */
+  const rows = items.length
+    ?
+    items
+      .map(
+        (item, i) => `
+        <tr>
+          <td>
+            ${i + 1}
+          </td>
+          <td>
+            ${escapeHtml(item.name)}
+          </td>
+          <td class="money">
+            ${formatPrice(item.price)}
+          </td>
+        </tr>
+      `
+      )
+      .join("")
+    :
+    `
+      <tr>
+        <td
+          colspan="3"
+          class="none"
+        >
+          没有商品记录 /
+          Keine Artikel vorhanden
+        </td>
+      </tr>
+    `;
+  /* PDF */
+  win.document.write(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>
+${escapeHtml(restaurant)}
+-
+餐厅消费记录 / Restaurant-Ausgaben
+</title>
+<style>
+@page {
+  size: A4;
+  margin: 18mm;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  font-family:
+    "Microsoft YaHei",
+    "Noto Sans CJK SC",
+    Arial,
+    sans-serif;
+  color: #111827;
+  margin: 0;
+}
+h1 {
+  text-align: center;
+  font-size: 24px;
+  margin: 0 0 24px;
+}
+.meta {
+  display: grid;
+  grid-template-columns:
+    1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding:
+    14px 16px;
+  border:
+    1px solid #d1d5db;
+  border-radius: 8px;
+}
+.label {
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+.value {
+  font-size: 15px;
+  font-weight: 600;
+}
+table {
+  width: 100%;
+  border-collapse:
+    collapse;
+}
+th,
+td {
+  border:
+    1px solid #d1d5db;
+  padding:
+    9px 10px;
+  font-size: 13px;
+}
+th {
+  background:
+    #f3f4f6;
+  text-align: left;
+}
+.money {
+  text-align: right;
+}
+.item-total {
+  margin-top: 18px;
+  display: flex;
+  justify-content:
+    space-between;
+  padding:
+    12px 16px;
+  border:
+    1px solid #d1d5db;
+  font-size: 15px;
+  font-weight: bold;
+}
+.sales-box {
+  margin-top: 20px;
+  border:
+    2px solid #111827;
+  border-radius: 8px;
+  padding: 16px;
+}
+.sales-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 14px;
+}
+.sales-row {
+  display: flex;
+  justify-content:
+    space-between;
+  padding: 7px 0;
+  font-size: 14px;
+}
+.sales-total {
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top:
+    1px solid #9ca3af;
+  display: flex;
+  justify-content:
+    space-between;
+  font-size: 18px;
+  font-weight: bold;
+}
+.sales-total .amount {
+  font-size: 23px;
+}
+.none {
+  text-align: center;
+  color: #6b7280;
+  padding: 25px;
+}
+.footer {
+  margin-top: 28px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 10px;
+}
+</style>
+</head>
+<body>
+<h1>
+餐厅消费记录 / Restaurant-Ausgaben
+</h1>
+<!-- 餐厅信息 -->
+<div class="meta">
+  <div>
+    <div class="label">
+      餐厅名称 / Restaurantname
+    </div>
+    <div class="value">
+      ${escapeHtml(restaurant)}
+    </div>
+  </div>
+  <div>
+    <div class="label">
+      日期 / Datum
+    </div>
+    <div class="value">
+      ${escapeHtml(germanDate)}
+    </div>
+  </div>
+</div>
+<!-- 商品列表 -->
+<table>
+<thead>
+<tr>
+<th style="width:60px">
+序号 / Nr.
+</th>
+<th>
+商品名称 / Artikelname
+</th>
+<th
+  style="
+    width:150px;
+    text-align:right
+  "
+>
+价格 / Preis
+</th>
+</tr>
+</thead>
+<tbody>
+${rows}
+</tbody>
+</table>
+<!-- 商品总价 -->
+<div class="item-total">
+  <span>
+    商品总价 / Artikelsumme
+  </span>
+  <span>
+    ${formatPrice(itemTotal)}
+  </span>
+</div>
+<!-- 当天营业额 -->
+<div class="sales-box">
+  <div class="sales-title">
+    📊 当天营业额 / Tagesumsatz
+  </div>
+  <div class="sales-row">
+    <span>
+      刷卡收入 / Kartenzahlungen
+    </span>
+    <span>
+      ${formatPrice(sales.card)}
+    </span>
+  </div>
+  <div class="sales-row">
+    <span>
+      现金收入 / Barzahlungen
+    </span>
+    <span>
+      ${formatPrice(sales.cash)}
+    </span>
+  </div>
+  <div class="sales-total">
+    <span>
+      当天营业额 / Tagesumsatz
+    </span>
+    <span class="amount">
+      ${formatPrice(sales.total)}
+    </span>
+  </div>
+</div>
+<div class="footer">
+  餐厅消费记录 /
+  Restaurant-Ausgaben
+</div>
+<script>
+window.onload = () => {
+  setTimeout(
+    () => window.print(),
+    300
+  );
+};
+<\/script>
+</body>
+</html>
+`);
+  win.document.close();
+}
+/* ================================
+   回车添加商品
+================================ */
+document
+  .getElementById("name")
+  .addEventListener(
+    "keydown",
+    e => {
+      if (e.key === "Enter") {
+        addItem();
+      }
+    }
+  );
+document
+  .getElementById("price")
+  .addEventListener(
+    "keydown",
+    e => {
+      if (e.key === "Enter") {
+        addItem();
+      }
+    }
+  );
+/* ================================
+   输入营业额时实时计算
+================================ */
+document
+  .getElementById("cardSales")
+  .addEventListener(
+    "input",
+    calculateSales
+  );
+document
+  .getElementById("cashSales")
+  .addEventListener(
+    "input",
+    calculateSales
+  );
+/* ================================
+   初始化
+================================ */
+render();
+</script>
+</body>
+</html>
